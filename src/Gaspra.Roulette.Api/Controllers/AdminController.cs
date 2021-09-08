@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Gaspra.Roulette.Api.Interfaces;
 using Gaspra.Roulette.Api.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -7,12 +6,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace Gaspra.Roulette.Api.Controllers
 {
     [ApiController]
-    [Route("")]
-    public class RouletteController : Controller
+    [Route("Admin")]
+    public class AdminController : Controller
     {
         private readonly IRouletteDataAccess _rouletteDataAccess;
 
-        public RouletteController(
+        public AdminController(
             IRouletteDataAccess rouletteDataAccess)
         {
             _rouletteDataAccess = rouletteDataAccess;
@@ -24,13 +23,16 @@ namespace Gaspra.Roulette.Api.Controllers
         {
             var players = await _rouletteDataAccess.GetPlayers();
 
-            var history = (await _rouletteDataAccess.GetHistory())
-                .ToList()
-                .OrderByDescending(h => h.RollTimestamp)
-                .Take(4)
-                .ToList();
+            var rollInterval = await _rouletteDataAccess.GetRollInterval();
 
-            return View(new RouletteViewModel(players, history));
+            return View(new AdminViewModel(players, rollInterval));
+        }
+
+        [HttpPost]
+        [Route("Reset")]
+        public async Task ResetEverything()
+        {
+            await _rouletteDataAccess.ResetEverything();
         }
     }
 }

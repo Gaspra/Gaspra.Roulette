@@ -9,4 +9,16 @@
         <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Update="wwwroot\images\richardroulette.png">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <None Remove="favicon.ico" />
+      <Content Update="wwwroot\Images\favicon.ico">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
 </Project>

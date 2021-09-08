@@ -21,6 +21,7 @@ BEGIN
 
         [Identifier] [UNIQUEIDENTIFIER] NOT NULL,
         [Name] [NVARCHAR](255) NOT NULL,
+        [Prefix] [NVARCHAR](255) NOT NULL,
         [TokenAllowance] [INT] NOT NULL,
         [Active] [INT] NOT NULL,
 
@@ -43,6 +44,7 @@ GO
 ALTER PROCEDURE [Roulette].[AddPlayer]
     @Identifier UNIQUEIDENTIFIER,
     @Name NVARCHAR(255),
+    @Prefix NVARCHAR(255),
     @TokenAllowance INT,
     @Active INT
 AS
@@ -55,12 +57,14 @@ BEGIN
         Roulette.Player (
             Identifier,
             Name,
+            Prefix,
             TokenAllowance,
             Active
         )
     VALUES (
         @Identifier,
         @Name,
+        @Prefix,
         @TokenAllowance,
         @Active
     )
@@ -85,6 +89,7 @@ IF NOT EXISTS (SELECT 1 FROM [sys].[types] st JOIN [sys].[schemas] ss ON st.sche
 BEGIN
     CREATE TYPE [Roulette].[TT_UpdatePlayers] AS TABLE(
         [Identifier] [UNIQUEIDENTIFIER] NOT NULL,
+        [Prefix] [NVARCHAR](255) NOT NULL,
         [Name] [NVARCHAR](255) NOT NULL,
         [TokenAllowance] [INT] NOT NULL,
         [Active] [INT] NOT NULL
@@ -116,7 +121,8 @@ BEGIN
         THEN UPDATE SET
             t.Active = s.Active,
             t.TokenAllowance = s.TokenAllowance,
-            t.Name = s.Name
+            t.Name = s.Name,
+            t.Prefix = s.Prefix
     ;
 
 END
@@ -140,10 +146,325 @@ BEGIN
     SELECT
         p.Identifier,
         p.Name,
+        p.Prefix,
         p.TokenAllowance,
         p.Active
     FROM
         Roulette.Player p
+
+END
+GO
+
+-- Create script: TogglePlayer
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[TogglePlayer]') AND [type] IN (N'P'))
+    BEGIN
+        EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[TogglePlayer] AS'
+    END
+GO
+
+ALTER PROCEDURE [Roulette].[TogglePlayer]
+    @Identifier UNIQUEIDENTIFIER
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    DECLARE @Active INT = (
+        SELECT
+            p.Active
+        FROM
+            Roulette.Player p
+        WHERE
+            p.Identifier = @Identifier
+    )
+
+    DECLARE @Toggle INT;
+
+    IF @Active = 1
+        BEGIN
+            SET @Toggle = 0
+        END
+    ELSE
+        BEGIN
+            SET @Toggle = 1
+        END
+
+    UPDATE
+        Roulette.Player
+    SET
+        Active = @Toggle
+    WHERE
+        Identifier = @Identifier
+
+END
+GO
+
+-- Create script: UpdatePlayerTokens
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[UpdatePlayerTokens]') AND [type] IN (N'P'))
+    BEGIN
+        EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[UpdatePlayerTokens] AS'
+    END
+GO
+
+ALTER PROCEDURE [Roulette].[UpdatePlayerTokens]
+    @Identifier UNIQUEIDENTIFIER,
+    @Tokens INT
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    UPDATE
+        Roulette.Player
+    SET
+        TokenAllowance = @Tokens
+    WHERE
+        Identifier = @Identifier
+
+END
+GO
+
+-- Create script: DeletePlayer
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[DeletePlayer]') AND [type] IN (N'P'))
+    BEGIN
+        EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[DeletePlayer] AS'
+    END
+GO
+
+ALTER PROCEDURE [Roulette].[DeletePlayer]
+    @Identifier UNIQUEIDENTIFIER
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    DELETE FROM
+        Roulette.Player
+    WHERE
+        Identifier = @Identifier
+
+END
+GO
+
+-- Create table: History
+IF NOT EXISTS(SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[History]') AND [type] IN (N'U'))
+BEGIN
+
+    CREATE TABLE [Roulette].[History] (
+        [HistoryId] [INT] IDENTITY(1,1) NOT NULL,
+
+        [Identifier] [UNIQUEIDENTIFIER] NOT NULL,
+        [RollTimestamp] [DATETIMEOFFSET] NOT NULL
+
+        CONSTRAINT [PK_History_HistoryId] PRIMARY KEY CLUSTERED
+        (
+        	[HistoryId] ASC
+        ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY]
+
+END
+GO
+
+-- Create script: AddHistory
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[AddHistory]') AND [type] IN (N'P'))
+BEGIN
+    EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[AddHistory] AS'
+END
+GO
+
+ALTER PROCEDURE [Roulette].[AddHistory]
+    @Identifier UNIQUEIDENTIFIER,
+    @RollTimestamp DATETIMEOFFSET
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    INSERT INTO
+        Roulette.History (
+            Identifier,
+            RollTimestamp
+        )
+    VALUES (
+        @Identifier,
+        @RollTimestamp
+    )
+
+END
+GO
+
+-- Create script: GetHistory
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[GetHistory]') AND [type] IN (N'P'))
+    BEGIN
+        EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[GetHistory] AS'
+    END
+GO
+
+ALTER PROCEDURE [Roulette].[GetHistory]
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    SELECT
+        p.Prefix,
+        p.Name,
+        h.RollTimestamp
+    FROM
+        Roulette.History h
+        INNER JOIN Roulette.Player p ON h.Identifier = p.Identifier
+    ORDER BY
+        h.RollTimestamp DESC
+
+END
+GO
+
+
+-- Create script: GetHistoryForPlayer
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[GetHistoryForPlayer]') AND [type] IN (N'P'))
+BEGIN
+    EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[GetHistoryForPlayer] AS'
+END
+GO
+
+ALTER PROCEDURE [Roulette].[GetHistoryForPlayer]
+    @Identifier UNIQUEIDENTIFIER
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    DECLARE @RollCount INT = (
+        SELECT
+            COUNT(h.Identifier)
+        FROM
+            Roulette.History h
+        WHERE
+            h.Identifier = @Identifier
+    )
+
+    DECLARE @HistoryCount INT = (
+        SELECT
+            COUNT(h.Identifier)
+        FROM
+            Roulette.History h
+    )
+
+    SELECT
+        @RollCount AS RollCount,
+        @HistoryCount AS HistoryCount
+
+END
+GO
+
+-- Create table: GameRule
+IF NOT EXISTS(SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[GameRule]') AND [type] IN (N'U'))
+BEGIN
+
+    CREATE TABLE [Roulette].[GameRule] (
+        [GameRuleId] [INT] IDENTITY(1,1) NOT NULL,
+
+        [RuleType] [NVARCHAR](255) NOT NULL,
+        [Value] [NVARCHAR](255) NOT NULL,
+
+        CONSTRAINT [PK_GameRule_GameRuleId] PRIMARY KEY CLUSTERED
+        (
+        	[GameRuleId] ASC
+        ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY]
+
+END
+GO
+
+-- Create script: GetRollInterval
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[GetRollInterval]') AND [type] IN (N'P'))
+    BEGIN
+        EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[GetRollInterval] AS'
+    END
+GO
+
+ALTER PROCEDURE [Roulette].[GetRollInterval]
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    SELECT
+        CONVERT(INT, gr.Value) AS RollInterval
+    FROM
+        Roulette.GameRule gr
+    WHERE
+        gr.RuleType = 'RollInterval'
+
+END
+GO
+
+-- Create script: UpdateRollInterval
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[UpdateRollInterval]') AND [type] IN (N'P'))
+    BEGIN
+        EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[UpdateRollInterval] AS'
+    END
+GO
+
+ALTER PROCEDURE [Roulette].[UpdateRollInterval]
+    @RollInterval INT
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    IF EXISTS (SELECT 1 FROM Roulette.GameRule WHERE RuleType = 'RollInterval')
+    BEGIN
+
+        UPDATE
+            Roulette.GameRule
+        SET
+            Value = CONVERT(NVARCHAR(255), @RollInterval)
+        WHERE
+            RuleType = 'RollInterval'
+
+    END
+    ELSE
+    BEGIN
+
+        INSERT
+            Roulette.GameRule (RuleType, Value)
+        VALUES
+            ('RollInterval', CONVERT(NVARCHAR(255), @RollInterval))
+
+    END
+END
+GO
+
+-- Create script: ResetEverything
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[ResetEverything]') AND [type] IN (N'P'))
+    BEGIN
+        EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[ResetEverything] AS'
+    END
+GO
+
+ALTER PROCEDURE [Roulette].[ResetEverything]
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    TRUNCATE TABLE Roulette.History;
+
+    TRUNCATE TABLE Roulette.Player;
+
+    TRUNCATE TABLE Roulette.GameRule;
+
+    EXEC Roulette.UpdateRollInterval 600;
 
 END
 GO

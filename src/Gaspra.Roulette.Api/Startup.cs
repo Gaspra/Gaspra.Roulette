@@ -31,6 +31,8 @@ namespace Gaspra.Roulette.Api
             {
                 c.SwaggerDoc("v1", new OpenApiInfo {Title = "Gaspra.Roulette.Api", Version = "v1"});
             });
+
+            services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,6 +52,8 @@ namespace Gaspra.Roulette.Api
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+
+            app.UseStaticFiles();
         }
     }
 }

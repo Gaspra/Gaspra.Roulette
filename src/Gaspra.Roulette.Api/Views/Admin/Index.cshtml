@@ -1,0 +1,308 @@
+﻿@model Gaspra.Roulette.Api.Models.AdminViewModel
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Admin</title>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+    <link rel="icon" type="image/x-icon" href="~/images/favicon.ico">
+
+    <style>
+        .accordion-button:not(.collapsed) {
+            background-color: rgb(255,255,255);
+            color: rgb(63,94,251);
+        }
+
+        .btn-danger {
+            color: #fff;
+            background-color: rgba(252,70,107,1);
+            border-color: rgba(252,70,107,1);
+        }
+
+        .btn-danger:hover {
+            color: #fff;
+            background-color: rgba(252,70,107,1);
+            border-color: rgba(252,70,107,1);
+        }
+
+        .btn-danger:active {
+            color: #fff;
+            background-color: rgba(252,70,107,1);
+            border-color: rgba(252,70,107,1);
+        }
+
+        .btn-success {
+            color: #fff;
+            background-color: rgba(63,94,251,1);
+            border-color: rgba(63,94,251,1);
+        }
+
+        .btn-success:hover {
+            color: #fff;
+            background-color: rgba(63,94,251,1);
+            border-color: rgba(63,94,251,1);
+        }
+
+        .btn-success:active {
+            color: #fff;
+            background-color: rgba(63,94,251,1);
+            border-color: rgba(63,94,251,1);
+        }
+
+        .bi.bi-check {
+            color: rgba(63,94,251,1);
+            font-weight: 900;
+            font-size: 2em;
+        }
+
+        .bi.bi-x {
+            color: rgba(252,70,107,1);
+            font-weight: 900;
+            font-size: 2em;
+        }
+    </style>
+
+</head>
+<body style="
+    height: 100vh;
+    width: 100vw;
+    background: rgb(63,94,251);
+    background: radial-gradient(circle, rgba(63,94,251,1) 0%, rgba(252,70,107,1) 100%);">
+
+<div class="container" style="padding-top: 30px;">
+    <div class="col-12" style="color: rgb(255,255,255);"><h1><b>Admin</b></h1></div>
+    <div class="accordion-item">
+            <h2 class="accordion-header" id="accordionHeaderPlayer">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAccordionPlayer" aria-expanded="true" aria-controls="collapseAccordionPlayer">
+                    <h3>Players</h3>
+                </button>
+            </h2>
+            <div id="collapseAccordionPlayer" class="accordion-collapse collapse show" aria-labelledby="accordionHeaderPlayer" data-bs-parent="#accordionPlayer">
+                <div class="accordion-body">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th scope="col" class="col-3">Identifier</th>
+                            <th scope="col" class="col-1">Playing</th>
+                            <th scope="col" class="col-3">Name</th>
+                            <th scope="col" class="col-2">Tokens</th>
+                            <th scope="col" class="col-2"></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @{
+                            var totalTokens = Model.Players.Where(p => p.Active).Sum(p => p.TokenAllowance);
+
+                            foreach (var player in Model.Players.OrderByDescending(p => p.Active).ThenBy(p => p.Name))
+                            {
+                                <tr>
+                                    <td>@player.Identifier</td>
+                                    <td style="text-align: center">
+                                        @if (player.Active)
+                                        {
+                                            <i class="bi bi-check"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-x"></i>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div style="font-size: small">@player.Prefix</div>
+                                        <div style="font-size: medium">@player.Name</div></td>
+                                    <td>@player.TokenAllowance</td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger" onclick="UpdateModal('@player.Identifier', '@player.Prefix', '@player.Name', @player.TokenAllowance, @totalTokens, @Convert.ToInt32(player.Active))" data-bs-toggle="modal" data-bs-target="#playerModal">Details</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="accordionRollIntervalHeader">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAccordionRollInterval" aria-expanded="true" aria-controls="collapseAccordionRollInterval">
+                <h3>Roll Interval</h3>
+            </button>
+        </h2>
+        <div id="collapseAccordionRollInterval" class="accordion-collapse collapse" aria-labelledby="accordionRollIntervalHeader" data-bs-parent="#accordionRollInterval">
+            <div class="accordion-body">
+                <form class="row g-3">
+                    <label for="rollIntervalInput" class="form-label">Enter new roll interval (in seconds), currently <b>@Model.RollInterval</b> seconds:</label>
+                    <input type="text" class="form-control" id="rollIntervalInput" placeholder="600">
+                    <div class="col-auto">
+                        <button onclick="RollInterval()" class="btn btn-success mb-3">Set</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="accordionTokensHeader">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAccordionTokens" aria-expanded="true" aria-controls="collapseAccordionTokens">
+                <h3>Tokens</h3>
+            </button>
+        </h2>
+        <div id="collapseAccordionTokens" class="accordion-collapse collapse" aria-labelledby="accordionTokensHeader" data-bs-parent="#accordionTokens">
+            <div class="accordion-body">
+                <form class="row g-3">
+                    <label for="PlayerIdentifierInput" class="form-label">Enter players identifier:</label>
+                    <input type="text" class="form-control" id="PlayerIdentifierInput" placeholder="0761a493-d3d8-42f2-945b-ed6b535428df">
+                    <label for="TokensInput" class="form-label">Enter number of tokens:</label>
+                    <input type="text" class="form-control" id="TokensInput" placeholder="20">
+                    <div class="col-auto">
+                        <button onclick="UpdateTokens()" class="btn btn-success mb-3">Set</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="accordionResetEverythingHeader">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAccordionResetEverything" aria-expanded="true" aria-controls="collapseAccordionResetEverything">
+                <h3>Reset</h3>
+            </button>
+        </h2>
+        <div id="collapseAccordionResetEverything" class="accordion-collapse collapse" aria-labelledby="accordionResetEverythingHeader" data-bs-parent="#accordionResetEverything">
+            <div class="accordion-body">
+                <form class="row g-3">
+                    <label for="ResetEverythingInput" class="form-label">Enter "yes" to verify decision:</label>
+                    <input type="text" class="form-control" id="ResetEverythingInput" placeholder="no">
+                    <div class="col-auto">
+                        <button onclick="ResetEverything()" class="btn btn-danger mb-3">Reset Everything</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="playerModal" tabindex="-1" aria-labelledby="playerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="playerModalLabel">
+                        <!--title-->
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="playerModalBody">
+                    <!--body-->
+                </div>
+                <div class="modal-footer" id="playerToggle">
+                    <!--footer-->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var data;
+
+        function UpdateModal(identifier, prefix, name, tokenAllowance, totalTokens, active)
+        {
+            $.ajax({
+                type: "GET",
+                url: "Players/"+identifier+"/History",
+                success: function (response) {
+
+                    var historyValue = response;
+
+                    $("#playerModalLabel").html(
+                        "<div style=\"font-size: small\">" + prefix + "</div><div style=\"font-size: medium\">" + name + "</div>"
+                    );
+
+                    $("#playerModalBody").html(
+                        "<p>" + name + " has <b>" + tokenAllowance + "/ " + totalTokens + "</b> tokens, there's a <b>" + ((100/totalTokens)*tokenAllowance).toFixed(2) + "%</b> chance to be picked next time!<br/><br/>"+ name +"'s been picked <b>"+ historyValue +"</b> times.</p>"
+                    );
+
+                    var toggleText = "";
+
+                    if (active === 1) {
+                        toggleText = "Pause Playing";
+                    } else {
+                        toggleText = "Resume Playing";
+                    }
+
+                    $("#playerToggle").html(
+                        "<button type=\"button\" class=\"btn btn-danger\" onclick=\"DeletePlayer('" + identifier + "')\">Delete</button>" +
+                        "<button type=\"button\" class=\"btn btn-primary\" onclick=\"TogglePlayer('" + identifier + "')\">" +
+                            toggleText +
+                        "</button>" +
+                        "<button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Close</button>"
+                    );
+                }
+            });
+        }
+
+        function TogglePlayer(identifier)
+        {
+            $.ajax({
+                type: "POST",
+                url: "Players/Toggle?identifier="+identifier,
+                success: function () { location.reload(); }
+            });
+        }
+
+        function DeletePlayer(identifier)
+        {
+            $.ajax({
+                type: "POST",
+                url: "Players/"+identifier+"/Delete",
+                success: function () { location.reload(); }
+            });
+        }
+
+        function RollInterval()
+        {
+            var rollInterval = $('#rollIntervalInput').val();
+
+            $.ajax({
+                type: "POST",
+                url: "Roll/Interval?rollInterval="+rollInterval,
+                success: function () { location.reload(); }
+            });
+        }
+
+        function UpdateTokens()
+        {
+            var identifier = $('#PlayerIdentifierInput').val();
+
+            var tokens = $('#TokensInput').val();
+
+            $.ajax({
+                type: "POST",
+                url: "Players/"+identifier+"/Tokens?tokens="+tokens,
+                success: function () { location.reload(); }
+            });
+        }
+
+        function ResetEverything()
+        {
+            var resetEverything = $('#ResetEverythingInput').val();
+
+            if (resetEverything === "yes")
+            {
+                $.ajax({
+                    type: "POST",
+                    url: "Admin/Reset",
+                    success: function () { location.reload(); }
+                });
+            }
+        }
+    </script>
+
+</div>
+</body>
+</html>

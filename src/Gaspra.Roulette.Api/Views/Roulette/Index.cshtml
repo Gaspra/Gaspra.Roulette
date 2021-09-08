@@ -1,0 +1,273 @@
+﻿@model Gaspra.Roulette.Api.Models.RouletteViewModel
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Roulette</title>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+    <link rel="icon" type="image/x-icon" href="~/images/favicon.ico">
+
+    <style>
+        .accordion-button:not(.collapsed) {
+            background-color: rgb(255,255,255);
+            color: rgb(63,94,251);
+        }
+
+        .btn-danger {
+            color: #fff;
+            background-color: rgba(252,70,107,1);
+            border-color: rgba(252,70,107,1);
+        }
+
+        .btn-danger:hover {
+            color: #fff;
+            background-color: rgba(252,70,107,1);
+            border-color: rgba(252,70,107,1);
+        }
+
+        .btn-danger:active {
+            color: #fff;
+            background-color: rgba(252,70,107,1);
+            border-color: rgba(252,70,107,1);
+        }
+
+        .btn-success {
+            color: #fff;
+            background-color: rgba(63,94,251,1);
+            border-color: rgba(63,94,251,1);
+        }
+
+        .btn-success:hover {
+            color: #fff;
+            background-color: rgba(63,94,251,1);
+            border-color: rgba(63,94,251,1);
+        }
+
+        .btn-success:active {
+            color: #fff;
+            background-color: rgba(63,94,251,1);
+            border-color: rgba(63,94,251,1);
+        }
+
+        .bi.bi-check {
+            color: rgba(63,94,251,1);
+            font-weight: 900;
+            font-size: 2em;
+        }
+
+        .bi.bi-x {
+            color: rgba(252,70,107,1);
+            font-weight: 900;
+            font-size: 2em;
+        }
+    </style>
+
+</head>
+<body style="
+    height: 100vh;
+    width: 100vw;
+    background: rgb(63,94,251);
+    background: radial-gradient(circle, rgba(63,94,251,1) 0%, rgba(252,70,107,1) 100%);">
+
+<div class="container" style="padding-top: 30px;">
+    <div class="col-12" style="color: rgb(255,255,255);"><h1><b>Roulette</b></h1></div>
+    <div class="accordion col-12" id="rouletteAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="accordionHeaderPlayer">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAccordionPlayer" aria-expanded="true" aria-controls="collapseAccordionPlayer">
+                    <h3>Players</h3>
+                </button>
+            </h2>
+            <div id="collapseAccordionPlayer" class="accordion-collapse collapse show" aria-labelledby="accordionHeaderPlayer" data-bs-parent="#accordionPlayer">
+                <div class="accordion-body">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th scope="col" class="d-none">Identifier</th>
+                            <th scope="col" class="col-1">Playing</th>
+                            <th scope="col" class="col-6">Name</th>
+                            <th scope="col" class="col-2">Tokens</th>
+                            <th scope="col" class="col-3"></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @{
+                            var totalTokens = Model.Players.Where(p => p.Active).Sum(p => p.TokenAllowance);
+
+                            foreach (var player in Model.Players.OrderByDescending(p => p.Active).ThenBy(p => p.Name))
+                            {
+                                <tr>
+                                    <td class="d-none">@player.Identifier</td>
+                                    <td style="text-align: center">
+                                        @if (player.Active)
+                                        {
+                                            <i class="bi bi-check"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-x"></i>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div style="font-size: small">@player.Prefix</div>
+                                        <div style="font-size: medium">@player.Name</div></td>
+                                    <td>@player.TokenAllowance</td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger" onclick="UpdateModal('@player.Identifier', '@player.Prefix', '@player.Name', @player.TokenAllowance, @totalTokens, @Convert.ToInt32(player.Active))" data-bs-toggle="modal" data-bs-target="#playerModal">Details</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="accordionHistoryHeader">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAccordionHistory" aria-expanded="true" aria-controls="collapseAccordionHistory">
+                    <h3>History</h3>
+                </button>
+            </h2>
+            <div id="collapseAccordionHistory" class="accordion-collapse collapse" aria-labelledby="accordionHistoryHeader" data-bs-parent="#accordionJoinGame">
+                <div class="accordion-body">
+                    <div class="row align-items-start">
+                    <div class="col-4">
+                        <img src="Images/richardroulette.png" width="100%"/>
+                    </div>
+                    <div class="col-8">
+                        <table class="table">
+                        <thead>
+                        <tr>
+                            <th scope="col" class="col-7">Name</th>
+                            <th scope="col" class="col-5">Rolled</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @{
+                            foreach (var historicalRoll in Model.HistoricalRolls.OrderByDescending(h => h.RollTimestamp))
+                            {
+                                <tr>
+                                    <td><div style="font-size: small">@historicalRoll.Prefix</div>
+                                        <div style="font-size: medium">@historicalRoll.Name</div></td>
+                                    <td>@historicalRoll.RollTimestamp.ToString("h:mm tt")</td>
+                                </tr>
+                            }
+                        }
+                        </tbody>
+                    </table>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="accordionJoinGameHeader">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAccordionJoinGame" aria-expanded="true" aria-controls="collapseAccordionJoinGame">
+                    <h3>Join</h3>
+                </button>
+            </h2>
+            <div id="collapseAccordionJoinGame" class="accordion-collapse collapse" aria-labelledby="accordionJoinGameHeader" data-bs-parent="#accordionJoinGame">
+                <div class="accordion-body">
+                    <form class="row g-3">
+                        <label for="nameInput" class="form-label">Enter your name and press join, then you'll be given a random prefix</label>
+                        <input type="text" class="form-control" id="nameInput" placeholder="Name">
+                        <div class="col-auto">
+                            <button onclick="AddPlayer()" class="btn btn-success mb-3">Join!</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="playerModal" tabindex="-1" aria-labelledby="playerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="playerModalLabel">
+                        <!--title-->
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="playerModalBody">
+                    <!--body-->
+                </div>
+                <div class="modal-footer" id="playerToggle">
+                    <!--footer-->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    var data;
+
+        function UpdateModal(identifier, prefix, name, tokenAllowance, totalTokens, active)
+        {
+            $.ajax({
+                type: "GET",
+                url: "Players/"+identifier+"/History",
+                success: function (response) {
+
+                    var historyValue = response;
+
+                    $("#playerModalLabel").html(
+                        "<div style=\"font-size: small\">" + prefix + "</div><div style=\"font-size: medium\">" + name + "</div>"
+                    );
+
+                    $("#playerModalBody").html(
+                        "<p>" + name + " has <b>" + tokenAllowance + "/ " + totalTokens + "</b> tokens, there's a <b>" + ((100/totalTokens)*tokenAllowance).toFixed(2) + "%</b> chance to be picked next time!<br/><br/>"+ name +"'s been picked <b>"+ historyValue +"</b> times.</p>"
+                    );
+
+                    var toggleText = "";
+
+                    if (active === 1) {
+                        toggleText = "Pause Playing";
+                    } else {
+                        toggleText = "Resume Playing";
+                    }
+
+                    $("#playerToggle").html(
+                        "<button type=\"button\" class=\"btn btn-primary\" onclick=\"TogglePlayer('" + identifier + "')\">" +
+                            toggleText +
+                        "</button>" +
+                        "<button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Close</button>"
+                    );
+                }
+            });
+        }
+
+        function TogglePlayer(identifier)
+        {
+            $.ajax({
+                type: "POST",
+                url: "Players/Toggle?identifier="+identifier,
+                success: function () { location.reload(); }
+            });
+        }
+
+        function AddPlayer()
+        {
+            var name = $('#nameInput').val();
+
+            $.ajax({
+                type: "POST",
+                url: "Players/New?name="+name,
+                success: function () { location.reload(); }
+            });
+        }
+    </script>
+
+</div>
+</body>
+</html>
