@@ -368,3 +368,7 @@ MigrationBackup/
 **/.idea/**
 /**/*.ncrunchproject
 /**/*.ncrunchsolution
+
+# Gaspra
+.build/
+.publish/
