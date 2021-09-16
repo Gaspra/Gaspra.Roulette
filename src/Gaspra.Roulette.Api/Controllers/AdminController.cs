@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Gaspra.Roulette.Api.Controllers
 {
+    [ApiExplorerSettings(IgnoreApi = true)]
     [ApiController]
     [Route("Admin")]
     public class AdminController : Controller

@@ -31,6 +31,20 @@ namespace Gaspra.Roulette.Api.Controllers
         }
 
         [HttpGet]
+        [Route("Names")]
+        public async Task<string> GetPlayersNames([FromQuery]bool includePrefix = true, [FromQuery]string delimiter = ", ")
+        {
+            var players = await _rouletteDataAccess.GetPlayers();
+
+            var names = players
+                .ToList()
+                .Select(p => includePrefix ? $"{p.Prefix} {p.Name}" : $"{p.Name}");
+
+            return string
+                .Join(delimiter, names);
+        }
+
+        [HttpGet]
         [Route("{identifier}")]
         public async Task<Player> GetPlayer(Guid identifier)
         {
