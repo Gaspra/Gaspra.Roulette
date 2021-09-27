@@ -179,8 +179,8 @@
             <div id="collapseAccordionJoinGame" class="accordion-collapse collapse" aria-labelledby="accordionJoinGameHeader" data-bs-parent="#accordionJoinGame">
                 <div class="accordion-body">
                     <form class="row g-3">
-                        <label for="nameInput" class="form-label">Enter your name and press join, then you'll be given a random prefix</label>
-                        <input type="text" class="form-control" id="nameInput" placeholder="Name">
+                        <label for="nameInput" class="form-label">Enter your name and press join (max name length is 7 characters)</label>
+                        <input type="text" class="form-control" id="nameInput" placeholder="Name" maxlength="7" minlength="2">
                         <div class="col-auto">
                             <button onclick="AddPlayer()" class="btn btn-success mb-3">Join!</button>
                         </div>
@@ -260,11 +260,17 @@
         {
             var name = $('#nameInput').val();
 
-            $.ajax({
-                type: "POST",
-                url: "Players/New?name="+name,
-                success: function () { location.reload(); }
-            });
+            if (name.length > 1 && name.length < 8)
+            {
+                $.ajax({
+                    type: "POST",
+                    url: "Players/New?name="+name,
+                    success: function () { location.reload(); }
+                });
+            }
+            else {
+                alert("Please enter a name between 2 and 7 characters long");
+            }
         }
     </script>
 

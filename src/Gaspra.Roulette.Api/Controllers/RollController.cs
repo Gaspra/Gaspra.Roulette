@@ -25,7 +25,7 @@ namespace Gaspra.Roulette.Api.Controllers
 
         [HttpGet]
         [Route("")]
-        public async Task<string> Roll()
+        public async Task<string> Roll([FromQuery] int rollList = 0, [FromQuery] string delimiter = ",", [FromQuery] bool prefix = false)
         {
             var playerTokens = new List<Token>();
 
@@ -76,7 +76,37 @@ namespace Gaspra.Roulette.Api.Controllers
 
             await _rouletteDataAccess.AddHistory(randomPlayer.Identifier, DateTimeOffset.UtcNow);
 
-            return $"{randomPlayer.Prefix} {randomPlayer.Name}";
+            var rollName = $"{randomPlayer.Name}";
+
+            if (prefix)
+            {
+                rollName = $"{randomPlayer.Prefix} " + rollName;
+            }
+
+            if (rollList > 0)
+            {
+                var randomPlayerList = new List<Player>();
+
+                var randomPlayerNumber = -1;
+                var nextRandomPlayerNumber = -1;
+
+                for (var p = 0; p < rollList; p++)
+                {
+                    while (randomPlayerNumber.Equals(nextRandomPlayerNumber))
+                    {
+                        nextRandomPlayerNumber = random.Next(0, players.Count);
+                    }
+
+                    randomPlayerList.Add(players[nextRandomPlayerNumber]);
+
+                    randomPlayerNumber = nextRandomPlayerNumber;
+                }
+
+                rollName = string.Join(delimiter,
+                    randomPlayerList.Select(p => prefix ? $"{p.Prefix} {p.Name}" : $"{p.Name}")) + delimiter + rollName;
+            }
+
+            return rollName;
         }
 
         [HttpGet]
@@ -88,6 +118,7 @@ namespace Gaspra.Roulette.Api.Controllers
             return rollInterval;
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("Interval")]
         public async Task UpdateRollInterval([FromQuery]int rollInterval)

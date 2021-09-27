@@ -55,6 +55,7 @@ namespace Gaspra.Roulette.Api.Controllers
             return player;
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("New")]
         public async Task NewPlayer([FromQuery] string name)
@@ -63,11 +64,15 @@ namespace Gaspra.Roulette.Api.Controllers
 
             var playerName = name.Sanitise();
 
-            var playerPrefix = players.PickUniquePrefix(playerName);
+            if (!string.IsNullOrWhiteSpace(playerName))
+            {
+                var playerPrefix = players.PickUniquePrefix(playerName);
 
-            await _rouletteDataAccess.AddPlayer(new Player(playerName, playerPrefix));
+                await _rouletteDataAccess.AddPlayer(new Player(playerName, playerPrefix));
+            }
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("Toggle")]
         public async Task TogglePlayer([FromQuery] Guid identifier)
@@ -91,6 +96,7 @@ namespace Gaspra.Roulette.Api.Controllers
             return $"{historyValues.rollCount}/ {historyValues.historyCount}";
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("{identifier}/Delete")]
         public async Task DeletePlayer(Guid identifier)
@@ -98,6 +104,7 @@ namespace Gaspra.Roulette.Api.Controllers
             await _rouletteDataAccess.DeletePlayer(identifier);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("{identifier}/Tokens")]
         public async Task UpdatePlayerTokens(Guid identifier, [FromQuery] int tokens)
