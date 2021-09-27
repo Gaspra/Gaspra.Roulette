@@ -6,7 +6,7 @@ namespace Gaspra.Roulette.Api.Extensions
     {
         public static string Sanitise(this string dirty)
         {
-            var dirtyCharacters = "?&^$#@!()+-,:;<>’\'-_*";
+            var dirtyCharacters = "?&^$#@!()+-,:;<>’\'-_*\"£";
 
             var sanitisedName = dirtyCharacters.Aggregate(dirty, (current, c) => current.Replace(c.ToString(), ""));
 

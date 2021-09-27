@@ -95,6 +95,7 @@
                             <th scope="col" class="col-1">Playing</th>
                             <th scope="col" class="col-3">Name</th>
                             <th scope="col" class="col-2">Tokens</th>
+                            <th scope="col" class="col-2">Secret</th>
                             <th scope="col" class="col-2"></th>
                         </tr>
                         </thead>
@@ -117,11 +118,11 @@
                                         }
                                     </td>
                                     <td>
-                                        <div style="font-size: small">@player.Prefix</div>
                                         <div style="font-size: medium">@player.Name</div></td>
                                     <td>@player.TokenAllowance</td>
+                                    <td>@player.Secret</td>
                                     <td>
-                                        <button type="button" class="btn btn-danger" onclick="UpdateModal('@player.Identifier', '@player.Prefix', '@player.Name', @player.TokenAllowance, @totalTokens, @Convert.ToInt32(player.Active))" data-bs-toggle="modal" data-bs-target="#playerModal">Details</button>
+                                        <button type="button" class="btn btn-danger" onclick="UpdateModal('@player.Identifier', '@player.Name', @player.TokenAllowance, @totalTokens, @Convert.ToInt32(player.Active))" data-bs-toggle="modal" data-bs-target="#playerModal">Details</button>
                                     </td>
                                 </tr>
                             }
@@ -210,7 +211,7 @@
     <script>
     var data;
 
-        function UpdateModal(identifier, prefix, name, tokenAllowance, totalTokens, active)
+        function UpdateModal(identifier, name, tokenAllowance, totalTokens, active)
         {
             $.ajax({
                 type: "GET",
@@ -220,7 +221,7 @@
                     var historyValue = response;
 
                     $("#playerModalLabel").html(
-                        "<div style=\"font-size: small\">" + prefix + "</div><div style=\"font-size: medium\">" + name + "</div>"
+                        "<div style=\"font-size: small\">" + "</div><div style=\"font-size: medium\">" + name + "</div>"
                     );
 
                     $("#playerModalBody").html(

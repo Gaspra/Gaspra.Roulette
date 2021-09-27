@@ -25,7 +25,7 @@ namespace Gaspra.Roulette.Api.Controllers
 
         [HttpGet]
         [Route("")]
-        public async Task<string> Roll([FromQuery] int rollList = 0, [FromQuery] string delimiter = ",", [FromQuery] bool prefix = false)
+        public async Task<string> Roll([FromQuery] int rollList = 0, [FromQuery] string delimiter = ",")
         {
             var playerTokens = new List<Token>();
 
@@ -78,16 +78,12 @@ namespace Gaspra.Roulette.Api.Controllers
 
             var rollName = $"{randomPlayer.Name}";
 
-            if (prefix)
-            {
-                rollName = $"{randomPlayer.Prefix} " + rollName;
-            }
-
             if (rollList > 0)
             {
                 var randomPlayerList = new List<Player>();
 
                 var randomPlayerNumber = -1;
+
                 var nextRandomPlayerNumber = -1;
 
                 for (var p = 0; p < rollList; p++)
@@ -103,7 +99,7 @@ namespace Gaspra.Roulette.Api.Controllers
                 }
 
                 rollName = string.Join(delimiter,
-                    randomPlayerList.Select(p => prefix ? $"{p.Prefix} {p.Name}" : $"{p.Name}")) + delimiter + rollName;
+                    randomPlayerList.Select(p => $"{p.Name}")) + delimiter + rollName;
             }
 
             return rollName;

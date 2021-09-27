@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Gaspra.Roulette.Api.Interfaces;
@@ -47,12 +48,18 @@ namespace Gaspra.Roulette.Api.Implementations
 
         public async Task UpdatePlayersTokenAllowance(IList<Player> players, Player pickedPlayer)
         {
+            var random = new Random(Guid.NewGuid().GetHashCode());
+
             foreach (var player in players.Where(p => !p.Equals(pickedPlayer)))
             {
                 player.TokenAllowance += 1;
+
+                player.TokenSpikeAllowance += random.Next(0, 3);
             }
 
             pickedPlayer.TokenAllowance -= (players.Count-1);
+
+            pickedPlayer.TokenSpikeAllowance += random.Next(2, 7);
 
             if (pickedPlayer.TokenAllowance < 1)
             {

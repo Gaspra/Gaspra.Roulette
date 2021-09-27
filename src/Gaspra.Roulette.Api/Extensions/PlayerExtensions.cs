@@ -11,38 +11,6 @@ namespace Gaspra.Roulette.Api.Extensions
 {
     public static class PlayerExtensions
     {
-        public static string PickUniquePrefix(this IList<Player> players, string name)
-        {
-            var prefixList = new List<string>
-            {
-                "Admiral", "The Honourable", "Captain",
-                "Doctor", "President", "General",
-                "Chancellor", "Holiness", "Chief",
-                "Reverend", "Professor", "Count"
-            };
-
-            var duplicatePlayerPrefixes = players
-                .Where(p => p.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase))
-                .Select(p => p.Prefix)
-                .ToList();
-
-            var uniquePrefixList = prefixList
-                .Where(p => !duplicatePlayerPrefixes.Any(d =>
-                    d.Equals(p, StringComparison.InvariantCultureIgnoreCase)))
-                .ToList();
-
-            if (!uniquePrefixList.Any())
-            {
-                throw new Exception($"No unique prefixes for player with name [{name}] left");
-            }
-
-            var random = new Random(Guid.NewGuid().GetHashCode());
-
-            var randomPrefix = uniquePrefixList[random.Next(0, uniquePrefixList.Count)];
-
-            return randomPrefix;
-        }
-
         public static async Task<IList<Player>> PlayersFromDataReader(this SqlDataReader sqlDataReader)
         {
             var players = new List<Player>();
@@ -53,13 +21,15 @@ namespace Gaspra.Roulette.Api.Extensions
 
                 var name = sqlDataReader["Name"].GetValue<string>();
 
-                var prefix = sqlDataReader["Prefix"].GetValue<string>();
+                var secret = sqlDataReader["Secret"].GetValue<string>();
 
                 var tokenAllowance = sqlDataReader["TokenAllowance"].GetValue<int>();
 
+                var tokenSpikeAllowance = sqlDataReader["TokenSpikeAllowance"].GetValue<int>();
+
                 var active = sqlDataReader["Active"].GetValue<int>();
 
-                players.Add(new Player(identifier, name, prefix, tokenAllowance, Convert.ToBoolean(active)));
+                players.Add(new Player(identifier, name, secret, tokenAllowance, tokenSpikeAllowance, Convert.ToBoolean(active)));
             }
 
             return players;
@@ -73,7 +43,7 @@ namespace Gaspra.Roulette.Api.Extensions
 
             foreach (PropertyDescriptor prop in properties)
             {
-                if (!prop.Name.Contains("tokens", StringComparison.InvariantCultureIgnoreCase))
+                if (!prop.Name.Equals("tokens", StringComparison.InvariantCultureIgnoreCase))
                 {
                     playerDataTable
                         .Columns

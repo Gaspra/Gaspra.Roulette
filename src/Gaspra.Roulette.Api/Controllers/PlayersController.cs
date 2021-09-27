@@ -32,13 +32,13 @@ namespace Gaspra.Roulette.Api.Controllers
 
         [HttpGet]
         [Route("Names")]
-        public async Task<string> GetPlayersNames([FromQuery]bool includePrefix = true, [FromQuery]string delimiter = ", ")
+        public async Task<string> GetPlayersNames([FromQuery]string delimiter = ", ")
         {
             var players = await _rouletteDataAccess.GetPlayers();
 
             var names = players
                 .ToList()
-                .Select(p => includePrefix ? $"{p.Prefix} {p.Name}" : $"{p.Name}");
+                .Select(p => $"{p.Name}");
 
             return string
                 .Join(delimiter, names);
@@ -58,18 +58,59 @@ namespace Gaspra.Roulette.Api.Controllers
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("New")]
-        public async Task NewPlayer([FromQuery] string name)
+        public async Task<JsonResult> NewPlayer([FromQuery] string name, [FromQuery] string secret)
         {
             var players = await _rouletteDataAccess.GetPlayers();
 
             var playerName = name.Sanitise();
 
-            if (!string.IsNullOrWhiteSpace(playerName))
+            if (string.IsNullOrWhiteSpace(playerName) || playerName.Length > 7)
             {
-                var playerPrefix = players.PickUniquePrefix(playerName);
-
-                await _rouletteDataAccess.AddPlayer(new Player(playerName, playerPrefix));
+                return new JsonResult(new NewPlayerModel
+                    {Reason = $"Name must be between 1-7 characters, sanitised name was: \"{playerName}\", please pick another!"})
+                {
+                    StatusCode = 406
+                };
             }
+
+            if (players.Any(p => p.Name.Equals(playerName, StringComparison.InvariantCultureIgnoreCase)))
+            {
+                return new JsonResult(new NewPlayerModel
+                    {Reason = $"Player with name \"{playerName}\" already exists, try another name!"})
+                {
+                    StatusCode = 406
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(secret))
+            {
+                return new JsonResult(new NewPlayerModel
+                    {Reason = $"Please pick a secret, this will come in handy later!"})
+                {
+                    StatusCode = 406
+                };
+            }
+
+            await _rouletteDataAccess.AddPlayer(new Player(playerName, secret));
+
+            var allPlayers = await _rouletteDataAccess.GetPlayers();
+
+            var playerModel = allPlayers.FirstOrDefault(p => p.Name.Equals(playerName));
+
+            if (playerModel is null)
+            {
+                return new JsonResult(new NewPlayerModel
+                    {Reason = $"Something went wrong, please try joining again!"})
+                {
+                    StatusCode = 418
+                };
+            }
+
+            return new JsonResult(new NewPlayerModel
+                {Reason = $"Enjoy playing {playerName}!"})
+            {
+                StatusCode = 201
+            };
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -110,6 +151,73 @@ namespace Gaspra.Roulette.Api.Controllers
         public async Task UpdatePlayerTokens(Guid identifier, [FromQuery] int tokens)
         {
             await _rouletteDataAccess.UpdatePlayerTokens(identifier, tokens);
+        }
+
+        [HttpPost]
+        [Route("Spike")]
+        public async Task<JsonResult> SpikePlayer([FromQuery] string attacker, [FromQuery] string secret, [FromQuery] string target)
+        {
+            if (attacker.Equals(target, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return new JsonResult(new NewPlayerModel
+                    {Reason = $"You can't spike yourself dummy..!"})
+                {
+                    StatusCode = 406
+                };
+            }
+
+            var players = await _rouletteDataAccess.GetPlayers();
+
+            var attackerPlayer =
+                players.First(p => p.Name.Equals(attacker, StringComparison.InvariantCultureIgnoreCase));
+
+            if (attackerPlayer.TokenSpikeAllowance <= 0)
+            {
+                return new JsonResult(new NewPlayerModel
+                    {Reason = $"Try again when you have some spike tokens!"})
+                {
+                    StatusCode = 406
+                };
+            }
+
+            if (!attackerPlayer.Secret.Equals(secret, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return new JsonResult(new NewPlayerModel
+                    {Reason = $"Incorrect secret code, try again!"})
+                {
+                    StatusCode = 406
+                };
+            }
+
+            var targetPlayer =
+                players.FirstOrDefault(p => p.Name.Equals(target, StringComparison.InvariantCultureIgnoreCase));
+
+            if (targetPlayer is null)
+            {
+                return new JsonResult(new NewPlayerModel
+                    {Reason = $"Unable to find the spike target \"{target}\", try again!"})
+                {
+                    StatusCode = 406
+                };
+            }
+
+            targetPlayer.TokenAllowance += attackerPlayer.TokenSpikeAllowance;
+
+            attackerPlayer.TokenSpikeAllowance = 0;
+
+            var playerList = new List<Player>
+            {
+                targetPlayer,
+                attackerPlayer
+            };
+
+            await _rouletteDataAccess.UpdatePlayers(playerList);
+
+            return new JsonResult(new NewPlayerModel
+                {Reason = $"You spiked {targetPlayer.Name}, they now have {targetPlayer.TokenAllowance} tokens!"})
+            {
+                StatusCode = 200
+            };
         }
     }
 }

@@ -21,8 +21,9 @@ BEGIN
 
         [Identifier] [UNIQUEIDENTIFIER] NOT NULL,
         [Name] [NVARCHAR](255) NOT NULL,
-        [Prefix] [NVARCHAR](255) NOT NULL,
+        [Secret] [NVARCHAR](255) NOT NULL,
         [TokenAllowance] [INT] NOT NULL,
+        [TokenSpikeAllowance] [INT] NOT NULL,
         [Active] [INT] NOT NULL,
 
         CONSTRAINT [PK_Player_PlayerId] PRIMARY KEY CLUSTERED
@@ -44,8 +45,9 @@ GO
 ALTER PROCEDURE [Roulette].[AddPlayer]
     @Identifier UNIQUEIDENTIFIER,
     @Name NVARCHAR(255),
-    @Prefix NVARCHAR(255),
+    @Secret NVARCHAR(255),
     @TokenAllowance INT,
+    @TokenSpikeAllowance INT,
     @Active INT
 AS
 BEGIN
@@ -57,15 +59,17 @@ BEGIN
         Roulette.Player (
             Identifier,
             Name,
-            Prefix,
+            Secret,
             TokenAllowance,
+            TokenSpikeAllowance,
             Active
         )
     VALUES (
         @Identifier,
         @Name,
-        @Prefix,
+        @Secret,
         @TokenAllowance,
+        @TokenSpikeAllowance,
         @Active
     )
 
@@ -89,9 +93,10 @@ IF NOT EXISTS (SELECT 1 FROM [sys].[types] st JOIN [sys].[schemas] ss ON st.sche
 BEGIN
     CREATE TYPE [Roulette].[TT_UpdatePlayers] AS TABLE(
         [Identifier] [UNIQUEIDENTIFIER] NOT NULL,
-        [Prefix] [NVARCHAR](255) NOT NULL,
         [Name] [NVARCHAR](255) NOT NULL,
+        [Secret] [NVARCHAR](255) NOT NULL,
         [TokenAllowance] [INT] NOT NULL,
+        [TokenSpikeAllowance] INT NOT NULL,
         [Active] [INT] NOT NULL
     )
 END
@@ -121,8 +126,9 @@ BEGIN
         THEN UPDATE SET
             t.Active = s.Active,
             t.TokenAllowance = s.TokenAllowance,
+            t.TokenSpikeAllowance = s.TokenSpikeAllowance,
             t.Name = s.Name,
-            t.Prefix = s.Prefix
+            t.Secret = s.Secret
     ;
 
 END
@@ -146,8 +152,9 @@ BEGIN
     SELECT
         p.Identifier,
         p.Name,
-        p.Prefix,
+        p.Secret,
         p.TokenAllowance,
+        p.TokenSpikeAllowance,
         p.Active
     FROM
         Roulette.Player p
@@ -209,7 +216,8 @@ GO
 
 ALTER PROCEDURE [Roulette].[UpdatePlayerTokens]
     @Identifier UNIQUEIDENTIFIER,
-    @Tokens INT
+    @TokenAllowance INT,
+    @TokenSpikeAllowance INT
 AS
 BEGIN
 
@@ -219,7 +227,8 @@ BEGIN
     UPDATE
         Roulette.Player
     SET
-        TokenAllowance = @Tokens
+        TokenAllowance = @TokenAllowance,
+        TokenSpikeAllowance = @TokenSpikeAllowance
     WHERE
         Identifier = @Identifier
 
@@ -312,7 +321,6 @@ BEGIN
     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
     SELECT
-        p.Prefix,
         p.Name,
         h.RollTimestamp
     FROM

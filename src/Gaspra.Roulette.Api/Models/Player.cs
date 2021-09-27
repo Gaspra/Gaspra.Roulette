@@ -7,40 +7,46 @@ namespace Gaspra.Roulette.Api.Models
     {
         public Guid Identifier { get; }
 
-        public string Prefix { get; }
-
         public string Name { get; }
 
+        public string Secret { get; }
+
         public int TokenAllowance { get; set; }
+
+        public int TokenSpikeAllowance { get; set; }
 
         public bool Active { get; }
 
         public IList<Token> Tokens;
 
-        public Player(string name, string prefix)
+        public Player(string name, string secret)
         {
             Identifier = Guid.NewGuid();
 
             Name = name;
 
-            Prefix = prefix;
+            Secret = secret;
 
             TokenAllowance = 20;
+
+            TokenSpikeAllowance = 0;
 
             Active = true;
 
             Tokens = new List<Token>();
         }
 
-        public Player(Guid identifier, string name, string prefix, int tokenAllowance, bool active)
+        public Player(Guid identifier, string name, string secret, int tokenAllowance, int tokenSpikeAllowance, bool active)
         {
             Identifier = identifier;
 
             Name = name;
 
-            Prefix = prefix;
+            Secret = secret;
 
             TokenAllowance = tokenAllowance;
+
+            TokenSpikeAllowance = tokenSpikeAllowance;
 
             Active = active;
         }

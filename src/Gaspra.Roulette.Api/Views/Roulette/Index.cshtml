@@ -94,8 +94,9 @@
                         <tr>
                             <th scope="col" class="d-none">Identifier</th>
                             <th scope="col" class="col-1">Playing</th>
-                            <th scope="col" class="col-6">Name</th>
+                            <th scope="col" class="col-4">Name</th>
                             <th scope="col" class="col-2">Tokens</th>
+                            <th scope="col" class="col-2">Spike Tokens</th>
                             <th scope="col" class="col-3"></th>
                         </tr>
                         </thead>
@@ -118,11 +119,11 @@
                                         }
                                     </td>
                                     <td>
-                                        <div style="font-size: small">@player.Prefix</div>
                                         <div style="font-size: medium">@player.Name</div></td>
                                     <td>@player.TokenAllowance</td>
+                                    <td>@player.TokenSpikeAllowance</td>
                                     <td>
-                                        <button type="button" class="btn btn-danger" onclick="UpdateModal('@player.Identifier', '@player.Prefix', '@player.Name', @player.TokenAllowance, @totalTokens, @Convert.ToInt32(player.Active))" data-bs-toggle="modal" data-bs-target="#playerModal">Details</button>
+                                        <button type="button" class="btn btn-danger" onclick="UpdateModal('@player.Identifier', '@player.Name', @player.TokenAllowance, @player.TokenSpikeAllowance, @totalTokens, @Convert.ToInt32(player.Active))" data-bs-toggle="modal" data-bs-target="#playerModal">Details</button>
                                     </td>
                                 </tr>
                             }
@@ -157,8 +158,7 @@
                             foreach (var historicalRoll in Model.HistoricalRolls.OrderByDescending(h => h.RollTimestamp))
                             {
                                 <tr>
-                                    <td><div style="font-size: small">@historicalRoll.Prefix</div>
-                                        <div style="font-size: medium">@historicalRoll.Name</div></td>
+                                    <td><div style="font-size: medium">@historicalRoll.Name</div></td>
                                     <td>@historicalRoll.RollTimestamp.ToString("h:mm tt")</td>
                                 </tr>
                             }
@@ -179,10 +179,12 @@
             <div id="collapseAccordionJoinGame" class="accordion-collapse collapse" aria-labelledby="accordionJoinGameHeader" data-bs-parent="#accordionJoinGame">
                 <div class="accordion-body">
                     <form class="row g-3">
-                        <label for="nameInput" class="form-label">Enter your name and press join (max name length is 7 characters)</label>
-                        <input type="text" class="form-control" id="nameInput" placeholder="Name" maxlength="7" minlength="2">
+                        <label for="nameInput" class="form-label">Enter your name (names must be unique, and can be up to 7 characters long):</label>
+                        <input type="text" class="form-control" id="nameInput" placeholder="Name" maxlength="7" required>
+                        <label for="secretInput" class="form-label">Enter a secret word to verify that it's you later on:</label>
+                        <input type="text" class="form-control" id="secretInput" placeholder="Secret" maxlength="255" required>
                         <div class="col-auto">
-                            <button onclick="AddPlayer()" class="btn btn-success mb-3">Join!</button>
+                            <button id="joinButton" class="btn btn-success mb-3">Join!</button>
                         </div>
                     </form>
                 </div>
@@ -210,9 +212,7 @@
     </div>
 
     <script>
-    var data;
-
-        function UpdateModal(identifier, prefix, name, tokenAllowance, totalTokens, active)
+        function UpdateModal(identifier, name, tokenAllowance, spikeAllowance, totalTokens, active)
         {
             $.ajax({
                 type: "GET",
@@ -222,11 +222,31 @@
                     var historyValue = response;
 
                     $("#playerModalLabel").html(
-                        "<div style=\"font-size: small\">" + prefix + "</div><div style=\"font-size: medium\">" + name + "</div>"
+                        "<div style=\"font-size: small\">" + "</div><div style=\"font-size: medium\">" + name + "</div>"
                     );
 
                     $("#playerModalBody").html(
-                        "<p>" + name + " has <b>" + tokenAllowance + "/ " + totalTokens + "</b> tokens, there's a <b>" + ((100/totalTokens)*tokenAllowance).toFixed(2) + "%</b> chance to be picked next time!<br/><br/>"+ name +"'s been picked <b>"+ historyValue +"</b> times.</p>"
+                        "<p>" +
+                        name +
+                        " has <b>" +
+                        tokenAllowance +
+                        "/ " +
+                        totalTokens +
+                        "</b> tokens, there's a <b>" +
+                        ((100/totalTokens)*tokenAllowance).toFixed(2) +
+                        "%</b> chance to be picked next time! " +
+                        name +
+                        "'s been picked <b>" +
+                        historyValue +
+                        "</b> times.</p><p>" +
+                        name +
+                        " has <b>" +
+                        spikeAllowance +
+                        "</b> spike tokens to pick on other players with! </p>" +
+                        "<label for=\"spikeInput\" class=\"form-label\">Enter player name to spike:</label>" +
+                        "<input type=\"text\" class=\"form-control\" id=\"spikeInput\" placeholder=\"Name\" maxlength=\"7\" required>" +
+                        "<label for=\"secretConfirmationInput\" class=\"form-label\">Enter secret (to confirm it's you!):</label>" +
+                        "<input type=\"text\" class=\"form-control\" id=\"secretConfirmationInput\" placeholder=\"Secret\" maxlength=\"255\" required>"
                     );
 
                     var toggleText = "";
@@ -238,6 +258,9 @@
                     }
 
                     $("#playerToggle").html(
+                        "<button type=\"button\" class=\"btn btn-danger\" onclick=\"SpikePlayer('" + name + "')\">" +
+                            "Spike!" +
+                        "</button>" +
                         "<button type=\"button\" class=\"btn btn-primary\" onclick=\"TogglePlayer('" + identifier + "')\">" +
                             toggleText +
                         "</button>" +
@@ -249,30 +272,87 @@
 
         function TogglePlayer(identifier)
         {
-            $.ajax({
-                type: "POST",
-                url: "Players/Toggle?identifier="+identifier,
-                success: function () { location.reload(); }
+            $.post()
+                .done(function() {
+                    ShowModal("Toggled", data.reason, true);
+                })
+                .fail(function () {
+                    ShowModal("Toggled", "Player toggle failed! Try again...", false);
+                });
+        }
+
+        $(document).ready(function () {
+            $('#joinButton').click(function (event) {
+                event.preventDefault();
+                AddPlayer();
             });
+        });
+
+        function SpikePlayer(name)
+        {
+            var attacker = name;
+
+            var secret = $('#secretConfirmationInput').val();
+
+            var target = $('#spikeInput').val();
+
+            $.post("Players/Spike?attacker="+attacker+"&secret="+secret+"&target="+target)
+                .done(function (data){
+                    ShowModal("Spiked!", data.reason, true);
+                })
+                .fail(function (data){
+                    ShowModal("Uh oh!", data.responseJSON.reason, false);
+                });
         }
 
         function AddPlayer()
         {
             var name = $('#nameInput').val();
 
-            if (name.length > 1 && name.length < 8)
-            {
-                $.ajax({
-                    type: "POST",
-                    url: "Players/New?name="+name,
-                    success: function () { location.reload(); }
+            var secret = $('#secretInput').val();
+
+            $.post("Players/New?name="+name+"&secret="+secret)
+                .done(function (data){
+                    ShowModal("Yey!", data.reason, true);
+                })
+                .fail(function (data){
+                    ShowModal("Uh oh!", data.responseJSON.reason, false);
                 });
+        }
+
+        function ShowModal(title, message, reloadOnClose)
+        {
+            $("#playerModalLabel").html(
+                "<div style=\"font-size: medium\">" + title + "</div>"
+            );
+
+            $("#playerModalBody").html(
+                "<p>" + message + "</p>"
+            );
+
+            var reloadAction = "onclick=\"Reload()\" ";
+
+            if (!reloadOnClose)
+            {
+                reloadAction = "data-bs-dismiss=\"modal\"";
             }
-            else {
-                alert("Please enter a name between 2 and 7 characters long");
-            }
+
+            $("#playerToggle").html(
+                "<button type=\"button\" class=\"btn btn-secondary\" " + reloadAction + ">Close</button>"
+            );
+
+            $('#playerModal').modal('show');
+        }
+
+        function Reload()
+        {
+            setTimeout(function () {
+                location.reload();
+            }, 50);
         }
     </script>
+
+
 
 </div>
 </body>
