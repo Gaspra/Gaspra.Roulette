@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Gaspra.Roulette.Api.Interfaces;
 using Gaspra.Roulette.Api.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -20,13 +21,20 @@ namespace Gaspra.Roulette.Api.Controllers
 
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index([FromQuery]string secret = "not the secret")
         {
-            var players = await _rouletteDataAccess.GetPlayers();
+            if (secret.Equals("eggyroy", StringComparison.InvariantCultureIgnoreCase))
+            {
+                var players = await _rouletteDataAccess.GetPlayers();
 
-            var rollInterval = await _rouletteDataAccess.GetRollInterval();
+                var rollInterval = await _rouletteDataAccess.GetRollInterval();
 
-            return View(new AdminViewModel(players, rollInterval));
+                var spikeTokenAllocation = await _rouletteDataAccess.GetSpikeAllocation();
+
+                return View(new AdminViewModel(players, rollInterval, spikeTokenAllocation));
+            }
+
+            return Redirect("~/");
         }
 
         [HttpPost]
@@ -35,5 +43,13 @@ namespace Gaspra.Roulette.Api.Controllers
         {
             await _rouletteDataAccess.ResetEverything();
         }
+
+        [HttpPost]
+        [Route("SpikeAllocation")]
+        public async Task SpikeAllocation([FromQuery]int minWinner, [FromQuery]int maxWinner, [FromQuery]int minLoser, [FromQuery]int maxLoser)
+        {
+            await _rouletteDataAccess.SpikeAllocation(minWinner, maxWinner, minLoser, maxLoser);
+        }
+
     }
 }

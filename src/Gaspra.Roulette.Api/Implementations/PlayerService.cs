@@ -50,16 +50,18 @@ namespace Gaspra.Roulette.Api.Implementations
         {
             var random = new Random(Guid.NewGuid().GetHashCode());
 
+            var spikeTokenAllocation = await _rouletteDataAccess.GetSpikeAllocation();
+
             foreach (var player in players.Where(p => !p.Equals(pickedPlayer)))
             {
                 player.TokenAllowance += 1;
 
-                player.TokenSpikeAllowance += random.Next(0, 3);
+                player.TokenSpikeAllowance += random.Next(spikeTokenAllocation.minLoser, spikeTokenAllocation.maxLoser+1);
             }
 
             pickedPlayer.TokenAllowance -= (players.Count-1);
 
-            pickedPlayer.TokenSpikeAllowance += random.Next(2, 7);
+            pickedPlayer.TokenSpikeAllowance += random.Next(spikeTokenAllocation.minWinner, spikeTokenAllocation.maxWinner+1);
 
             if (pickedPlayer.TokenAllowance < 1)
             {

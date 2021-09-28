@@ -452,6 +452,78 @@ BEGIN
 END
 GO
 
+-- Create script: GetSpikeTokenAllocation
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[GetSpikeTokenAllocation]') AND [type] IN (N'P'))
+    BEGIN
+        EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[GetSpikeTokenAllocation] AS'
+    END
+GO
+
+ALTER PROCEDURE [Roulette].[GetSpikeTokenAllocation]
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    SELECT
+        gr.Value AS SpikeTokenAllocation
+    FROM
+        Roulette.GameRule gr
+    WHERE
+        gr.RuleType = 'SpikeTokenAllocation'
+
+END
+GO
+
+-- Create script: UpdateSpikeTokenAllocation
+IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[UpdateSpikeTokenAllocation]') AND [type] IN (N'P'))
+    BEGIN
+        EXEC [dbo].[sp_executesql] @statement = N'CREATE PROCEDURE [Roulette].[UpdateSpikeTokenAllocation] AS'
+    END
+GO
+
+ALTER PROCEDURE [Roulette].[UpdateSpikeTokenAllocation]
+    @MinWinnerTokens INT,
+    @MaxWinnerTokens INT,
+    @MinLoserTokens INT,
+    @MaxLoserTokens INT
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    IF EXISTS (SELECT 1 FROM Roulette.GameRule WHERE RuleType = 'SpikeTokenAllocation')
+        BEGIN
+
+            UPDATE
+                Roulette.GameRule
+            SET
+                Value = CONVERT(NVARCHAR(50), @MinWinnerTokens) + ',' +
+                        CONVERT(NVARCHAR(50), @MaxWinnerTokens) + ',' +
+                        CONVERT(NVARCHAR(50), @MinLoserTokens) + ',' +
+                        CONVERT(NVARCHAR(50), @MaxLoserTokens)
+            WHERE
+                RuleType = 'SpikeTokenAllocation'
+
+        END
+    ELSE
+        BEGIN
+
+            INSERT
+                Roulette.GameRule (RuleType, Value)
+            VALUES
+            ('SpikeTokenAllocation',
+             CONVERT(NVARCHAR(50), @MinWinnerTokens) + ',' +
+             CONVERT(NVARCHAR(50), @MaxWinnerTokens) + ',' +
+             CONVERT(NVARCHAR(50), @MinLoserTokens) + ',' +
+             CONVERT(NVARCHAR(50), @MaxLoserTokens))
+
+        END
+END
+GO
+
 -- Create script: ResetEverything
 IF NOT EXISTS (SELECT 1 FROM [sys].[objects] WHERE [object_id] = OBJECT_ID(N'[Roulette].[ResetEverything]') AND [type] IN (N'P'))
     BEGIN
@@ -473,6 +545,8 @@ BEGIN
     TRUNCATE TABLE Roulette.GameRule;
 
     EXEC Roulette.UpdateRollInterval 600;
+
+    EXEC Roulette.UpdateSpikeTokenAllocation 2, 6, 0, 1
 
 END
 GO

@@ -153,6 +153,7 @@ namespace Gaspra.Roulette.Api.Controllers
             await _rouletteDataAccess.UpdatePlayerTokens(identifier, tokens);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("Spike")]
         public async Task<JsonResult> SpikePlayer([FromQuery] string attacker, [FromQuery] string secret, [FromQuery] string target)

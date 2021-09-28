@@ -292,5 +292,68 @@ namespace Gaspra.Roulette.Api.Implementations
 
             await connection.CloseAsync();
         }
+
+        public async Task SpikeAllocation(int minWinner, int maxWinner, int minLoser, int maxLoser)
+        {
+            await using var connection = new SqlConnection(_connectionString);
+
+            var command = new SqlCommand("[Roulette].[UpdateSpikeTokenAllocation]", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            command.Parameters.Add("@MinWinnerTokens", SqlDbType.Int).Value = minWinner;
+
+            command.Parameters.Add("@MaxWinnerTokens", SqlDbType.Int).Value = maxWinner;
+
+            command.Parameters.Add("@MinLoserTokens", SqlDbType.Int).Value = minLoser;
+
+            command.Parameters.Add("@MaxLoserTokens", SqlDbType.Int).Value = maxLoser;
+
+            await connection.OpenAsync();
+
+            await command.ExecuteNonQueryAsync();
+
+            await connection.CloseAsync();
+        }
+
+        public async Task<(int minWinner, int maxWinner, int minLoser, int maxLoser)> GetSpikeAllocation()
+        {
+            var spikeAllocation = (2, 6, 0, 1);
+
+            try
+            {
+                await using var connection = new SqlConnection(_connectionString);
+
+                var command = new SqlCommand("[Roulette].[GetSpikeTokenAllocation]", connection)
+                {
+                    CommandType = CommandType.StoredProcedure
+                };
+
+                await connection.OpenAsync();
+
+                await using var dataReader = await command.ExecuteReaderAsync();
+
+                while (await dataReader.ReadAsync())
+                {
+                    var spikeTokenAllocationSegments = dataReader["SpikeTokenAllocation"].GetValue<string>().Split(",");
+
+                    spikeAllocation = (
+                        int.Parse(spikeTokenAllocationSegments[0]),
+                        int.Parse(spikeTokenAllocationSegments[1]),
+                        int.Parse(spikeTokenAllocationSegments[2]),
+                        int.Parse(spikeTokenAllocationSegments[3])
+                    );
+                }
+
+                await connection.CloseAsync();
+            }
+            catch (Exception ex)
+            {
+                //error handling, haa...
+            }
+
+            return spikeAllocation;
+        }
     }
 }

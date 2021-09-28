@@ -30,5 +30,9 @@ namespace Gaspra.Roulette.Api.Interfaces
         Task UpdatePlayerTokens(Guid identifier, int tokens);
 
         Task ResetEverything();
+
+        Task SpikeAllocation(int minWinner, int maxWinner, int minLoser, int maxLoser);
+
+        Task<(int minWinner, int maxWinner, int minLoser, int maxLoser)> GetSpikeAllocation();
     }
 }

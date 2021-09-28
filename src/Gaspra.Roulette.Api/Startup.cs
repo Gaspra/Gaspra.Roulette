@@ -40,9 +40,12 @@ namespace Gaspra.Roulette.Api
         {
             app.UseDeveloperExceptionPage();
 
-            app.UseSwagger();
+            if (env.IsDevelopment())
+            {
+                app.UseSwagger();
 
-            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Gaspra.Roulette.Api v1"));
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Gaspra.Roulette.Api v1"));
+            }
 
             app.UseRouting();
 
